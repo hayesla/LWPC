@@ -1,0 +1,11 @@
+case-id gqd
+tx gqd
+tx-data gqd 22.1  54.732 -02.88 0.000005 0 0 0
+ionosphere lwpm Apr/7/2006 07:00
+receivers 44.850000 20.380000
+lwflds
+print-swg 0
+print-mds 0
+print-lwf 1
+start
+quit

@@ -3,6 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import seaborn as sns
+
 
 def main(argv):
     
@@ -27,6 +29,13 @@ def main(argv):
     test = all_data[start_data+1: end_data]
     rest = all_data[end_data:]
 
+    #takes care of the invalid literal for amp and phase sticking together
+    for i in range(len(test)):
+        if len(test[i]) == 8:
+            ll = test[i][-1].split('-')
+            test[i][-1] = ll[0]
+            test[i].append('-'+ll[1])
+      
 
     #test = []
     #for i in range(len(data)):

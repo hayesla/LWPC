@@ -1,14 +1,8 @@
-file-mds C:\LWPCv21\save\delete
-file-lwf C:\LWPCv21\save\delete
-case-id lwpc_cal
-tx lwpc_cal
-tx-data lwpc 13  80.000  30.000 100 100 0 0 0
-ionosphere lwpm Feb/23/2010 13:22
-receivers 10.000000 60.000000
-lwflds
-print-swg 0
-print-mds 0
+case-id dk7fc
+tx dk7fc
+tx-data dk7fc 9.0 49.771 -8.708 0.000005 0 0 0
+ionosphere lwpm Dec/28/2013 13: 0
+receivers 28.0 80.5
 print-lwf 1
-lwf-vs-distance 20000 20
 start
 quit
