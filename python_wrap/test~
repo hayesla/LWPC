@@ -1,0 +1,29 @@
+#!/bin/bash
+
+
+if [ $# -ne 1 ]; then
+    echo -e $0: "usage: you need to supply an input file\n example: ./test lwpc_test "
+    exit 1
+fi
+
+name=$1
+echo 'test $name'
+
+
+rm -f $name.mds
+rm -f $name.lwf
+
+
+workdir=/home/laura/lwpc_test
+
+# Path to your LWPC executable
+
+LWPC_EXE=/home/laura/lwpc_test/lwpc/lwpcv21/LWPC
+
+# Path to your LWPC data directory, contains files such as coast$d.dat
+
+LWPC_DAT=/home/laura/lwpc_test/lwpc/lwpcv21/data
+
+cd $workdir
+#echo $LWPC_DAT > lwpcDAT.loc
+$LWPC_EXE $name
