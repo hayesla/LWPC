@@ -86,6 +86,14 @@ def main(argv):
         pha[i] = float(pha[i])
 
     fig, ax = plt.subplots(2, sharex = True)
+    if file_name == 'gqd.log':
+	ax[0].set_ylim(0,500)
+	#ax[1].set_ylim(50, 110)
+        ax[0].set_xlim(0, 2000)
+    if file_name == 'naaa.log':
+        ax[0].set_xlim(0, 6550)
+	ax[0].set_ylim(-100,400)
+	ax[1].set_ylim(50, 120)
     ax[0].plot(distance[0:-1], pha[0:-1], label = 'Phase')
     ax[0].legend()
     ax[0].set_xlabel('Distance (km)')
@@ -93,8 +101,9 @@ def main(argv):
     ax[1].legend()
     ax[1].set_xlabel('Distance (km)')
     plt.tight_layout()
+   # plt.savefig('test1.png')
     plt.show()
-
+    
 
 if __name__ == "__main__":
     main(sys.argv[1:])
