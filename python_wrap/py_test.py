@@ -1,12 +1,12 @@
 import numpy as np
 import subprocess
 import os
-
+from reading_log import read_lwpc_log
 
 mins = 0
-while mins < 21:
+while mins < 1440:
 #parameters to do into lwpc inp file
-	workdir='/home/laura/lwpc_test/lwpc/python_wrap'
+	workdir='/home/laura/lwpc_test'
 	i_d = 'test_file'
 	freq = '24.000'
 	tx_lat = '44.633'
@@ -35,5 +35,11 @@ while mins < 21:
 	run_command = './test ' + input_file
 	run_lwpc = subprocess.call(run_command, shell = True)
 	print hhmm
+
+	pha, amp, dist = read_lwpc_log('test_file.log')
+	wr = open('results.dat', 'a')
+	wr.write(hhmm + ' '  + str(pha[-1]) + ' ' + str(amp[-1]) + ' ' + str(dist[-1]) + '\n')
+	wr.close()
+
 	mins = mins+10
 #os.remove('test_file.inp')
