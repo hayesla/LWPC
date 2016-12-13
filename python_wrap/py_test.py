@@ -6,7 +6,6 @@ import datetime
 import matplotlib.pyplot as plt
 plt.ion()
 
-'''code to plot phase and amplitude throughout a certain day (diurnal). The code uses the simple LWPM model and updates calculates phase and amp every 10 mins'''
 
 
 mins = 0
@@ -29,8 +28,8 @@ while mins < 1440:
 	f.write('file-lwf '+ workdir +'\n')
 	f.write('tx '+ i_d +'\n')
 	f.write('tx-data '+ i_d + ' ' + freq + ' ' + tx_lat + ' ' + tx_lon +' '+power + ' 0 0 0'+'\n')
-	f.write('ionosphere lwpm ' + date + ' '+ hhmm + '\n')
-	#f.write('ionosphere homogeneous exponential 0.3 80 \n')
+	#f.write('ionosphere lwpm ' + date + ' '+ hhmm + '\n')
+	f.write('ionosphere homogeneous exponential 0.3 76 \n')
 	f.write('receivers ' + rx_lat +' '+ rx_lon + '\n')
 	f.write('print-lwf 1 \n')
 	f.write('start \n')
@@ -44,15 +43,13 @@ while mins < 1440:
 	print hhmm
 
 	pha, amp, dist = read_lwpc_log('test_file.log')
-	wr = open('results_23_jul.dat', 'a')
+	wr = open('results_23_jul_h_76.dat', 'a')
 	wr.write(hhmm + ' '  + str(pha[-1]) + ' ' + str(amp[-1]) + ' ' + str(dist[-1]) + '\n')
 	wr.close()
 
 	mins = mins+10
 
-
-#read in the results
-res = np.loadtxt('results_23_jul.dat', dtype = 'str')
+res = np.loadtxt('results_23_jul_h_76.dat', dtype = 'str')
 res = np.array(res)
 tim = []
 for i in range(len(res)):
@@ -60,8 +57,6 @@ for i in range(len(res)):
 pha = res[:,1]
 amp = res[:,2]
 
-
-#plot results
 fig, ax = plt.subplots(figsize = (10,5))
 ax.plot(tim, pha, label = 'Phase', color = 'g')
 ax.set_title('LWPC ' + date + ' ' + freq + ' kHz TX: '+ tx_lat  +','+tx_lon + ' RX: ' + rx_lat + ','+ rx_lon)
