@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+sns.set_context('paper', font_scale = 1.5)
+sns.set_style('ticks',{'xtick.direction':'in','ytick.direction':'in'})
+
 
 #def main(argv):
 def read_lwpc_log(file_name):
@@ -22,7 +25,7 @@ def read_lwpc_log(file_name):
             elif all_data[i][0] == 'nc':
                 end_data = i
         except:
-            print('nada')
+            pass
 
 
     meta = all_data[0:start_data]
@@ -30,12 +33,25 @@ def read_lwpc_log(file_name):
     rest = all_data[end_data:]
 
     #takes care of the invalid literal for amp and phase sticking together
-    for i in range(len(test)):
-        if len(test[i]) == 8:
-            ll = test[i][-1].split('-')
-            test[i][-1] = ll[0]
-            test[i].append('-'+ll[1])
-      
+
+    wah = True
+    while wah:
+        wah = False
+        for i in range(len(test)):
+            if len(test[i]) < 9:
+                for j in range(len(test[i])):
+                    if len(test[i][j])>12:
+                        ll = test[i][j].split('-')
+                        if len(ll) > 2:
+                            test[i][j] = '-'+ll[1]
+                            test[i].insert(j+1, ll[2])
+                        else:
+                            test[i][j] = ll[0]
+                            test[i].insert(j+1, '-'+ll[1])
+        for i in range(len(test)):
+            for j in range(len(test[i])):
+                if len(test[i][j]) > 12:   
+                    wah = True
 
     #test = []
     #for i in range(len(data)):
@@ -51,7 +67,7 @@ def read_lwpc_log(file_name):
         try:
             dist3.append(test[i][6])
         except:
-            print('end')
+            pass
     distance = dist1 + dist2 + dist3
     for i in range(len(distance)):
         distance[i] = float(distance[i])
@@ -66,7 +82,7 @@ def read_lwpc_log(file_name):
         try:
             amp3.append(test[i][7])
         except:
-            print('end')
+            pass
     amp = amp1 + amp2 + amp3
     for i in range(len(amp)):
         amp[i] = float(amp[i])
@@ -80,7 +96,7 @@ def read_lwpc_log(file_name):
         try:
             pha3.append(test[i][8])
         except:
-            print('end')
+            pass
     pha = pha1 + pha2 + pha3
     for i in range(len(pha)):
         pha[i] = float(pha[i])
@@ -88,13 +104,13 @@ def read_lwpc_log(file_name):
     '''
     fig, ax = plt.subplots(2, sharex = True)
     if file_name == 'gqd.log':
-	ax[0].set_ylim(0,500)
-	#ax[1].set_ylim(50, 110)
+    ax[0].set_ylim(0,500)ls
+    #ax[1].set_ylim(50, 110)
         ax[0].set_xlim(0, 2000)
     if file_name == 'naaa.log':
         ax[0].set_xlim(0, 6550)
-	ax[0].set_ylim(-100,400)
-	ax[1].set_ylim(50, 120)
+        ax[0].set_ylim(-100,400)
+        ax[1].set_ylim(50, 120)
     ax[0].plot(distance[0:-1], pha[0:-1], label = 'Phase')
     ax[0].legend()
     ax[0].set_xlabel('Distance (km)')
@@ -108,3 +124,4 @@ def read_lwpc_log(file_name):
 
 #if __name__ == "__main__":
 #    main(sys.argv[1:])
+
