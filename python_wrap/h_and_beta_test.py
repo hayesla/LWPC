@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 
-loopy_h = np.arange(60, 80, 0.1)
-loopy_b = np.arange(0.3, 0.5, 0.001)
+loopy_h = np.arange(55, 85, 0.1)
+loopy_b = np.arange(0.2, 0.5, 0.001)
 for i in loopy_h:
 	for j in loopy_b:
 		workdir='/home/laura/lwpc_test/lwpc/python_wrap'
@@ -41,11 +41,11 @@ for i in loopy_h:
 		print 'h_prime equals' +str(i)+ 'and beta equals ' + str(j)
 
 		pha, amp, dist = read_lwpc_log('h_and_beta.log')
-		wr = open('h_and_beta_full.dat', 'a')
+		wr = open('h_and_beta_model.dat', 'a')
 		wr.write(str(i) + ' ' + str(j) + ' '  + str(pha[-1]) + ' ' + str(amp[-1]) + ' ' + str(dist[-1]) + '\n')
 		wr.close()
 	
-res = np.loadtxt('h_and_beta_full.dat')
+res = np.loadtxt('h_and_beta_model.dat')
 h_prime = res[:,0]
 phase = res[:,1]
 amp = res[:,2]
