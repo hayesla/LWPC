@@ -28,7 +28,7 @@ msk_amp = Series(amp, index = msk_time)+107
 msk_pha = Series(pha, index = msk_time)
 
 
-res = np.loadtxt('h_and_beta.dat')
+res = np.loadtxt('h_and_beta_full.dat')
 h_prime = res[:,0]
 beta = res[:,1]
 phase = res[:,2]
@@ -36,16 +36,27 @@ amp = res[:,3]
 dist = res[:,4]
 
 
-b_values = np.arange(0.3, 0.5, 0.01)
-h_values = np.arange(60, 80, 1)
+b_values = np.arange(0.3, 0.5, 0.001)
+h_values = np.arange(60, 80, 0.1)
 
-test = np.arange(0, 400, 20)
+test = np.arange(0, 40000, 200)
 new = []
 for i in range(len(test)):
-	if test[i]!= 380:
+	if test[i]!= 39800:
 		new.append(amp[test[i]:test[i+1]])
 	else:
 		new.append(amp[test[i]:])
+
+
+new = np.array(new)
+
+full_chi = []
+for i in range(len(msk_pha)):
+	chi = (-new + msk_amp[i])**2
+	full_chi.append(chi)
+
+
+
 
 
 plt.contourf(b_values, h_values, new, cmap = 'magma')
