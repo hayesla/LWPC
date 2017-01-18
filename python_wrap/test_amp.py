@@ -68,12 +68,36 @@ for i in range(len(test_a)):
 h_prime_model = h_prime[indexx]
 beta_model = beta[indexx]
 
+plot_test_first = False
+if plot_test_first:
+    fig, ax = plt.subplots(3, sharex=True)
+    ax[0].plot(test_a, label = 'MSK Amp')
+    ax[1].plot(test_a.index, h_prime_model, label = 'H prime')
+    ax[2].plot(test_a.index, beta_model, label = 'beta')
 
-fig, ax = plt.subplots(3, sharex=True)
-ax[0].plot(test_a, label = 'MSK Amp')
-ax[1].plot(test_a.index, h_prime_model, label = 'H prime')
-ax[2].plot(test_a.index, beta_model, label = 'beta')
 
+
+
+
+bb = np.arange(0.3, 0.5, 0.01)
+hh = np.arange(60, 80, 1)
+test = np.arange(0, 400, 20)
+new = []
+for i in range(len(test)):
+    if test[i]!=380:
+        new.append(amp[test[i]:test[i+1]])
+    else:    
+        new.append(amp[test[i]:])
+new = np.array(new)
+dirr = '/home/laura/lwpc_test/lwpc/python_wrap/test_plots'
+for i in range(len(test_a)):
+    plt.contourf(bb, hh, (-new + test_a[i])**2)
+    if i < 10:
+        plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/test_plots/test00'+str(i)+'.png')
+        plt.clf()
+    else:
+        plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/test_plots/test0'+str(i)+'.png')
+        plt.clf()
 
 
 
