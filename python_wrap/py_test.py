@@ -28,8 +28,8 @@ while mins < 1440:
 	f.write('file-lwf '+ workdir +'\n')
 	f.write('tx '+ i_d +'\n')
 	f.write('tx-data '+ i_d + ' ' + freq + ' ' + tx_lat + ' ' + tx_lon +' '+power + ' 0 0 0'+'\n')
-	#f.write('ionosphere lwpm ' + date + ' '+ hhmm + '\n')
-	f.write('ionosphere homogeneous exponential 0.3 76 \n')
+	f.write('ionosphere lwpm ' + date + ' '+ hhmm + '\n')
+	#f.write('ionosphere homogeneous exponential 0.3 76 \n')
 	f.write('receivers ' + rx_lat +' '+ rx_lon + '\n')
 	f.write('print-lwf 1 \n')
 	f.write('start \n')
@@ -43,13 +43,13 @@ while mins < 1440:
 	print hhmm
 
 	pha, amp, dist = read_lwpc_log('test_file.log')
-	wr = open('results_23_jul_h_76.dat', 'a')
+	wr = open('23_test.dat', 'a')
 	wr.write(hhmm + ' '  + str(pha[-1]) + ' ' + str(amp[-1]) + ' ' + str(dist[-1]) + '\n')
 	wr.close()
 
 	mins = mins+10
 
-res = np.loadtxt('results_23_jul_h_76.dat', dtype = 'str')
+res = np.loadtxt('23_test.dat', dtype = 'str')
 res = np.array(res)
 tim = []
 for i in range(len(res)):

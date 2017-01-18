@@ -3,7 +3,7 @@ from sunpy import lightcurve as lc
 import matplotlib.pyplot as plt
 from pandas import *
 from sunpy.time import parse_time
-basetime = parse_time('2016-07-23 00:00')
+
 import datetime
 import os
 
@@ -15,8 +15,8 @@ import os
 # time frame, pandas Series for amplitude  and phase 
 # input is name of file
 #----------------------------------------------------#
-def read_files(name):
-
+def read_files(name, date):
+	basetime = parse_time(date)
 	#f = open(os.path.join(dir_path,name))
 	f = open(name)	
 	ff = f.readlines()
@@ -42,7 +42,7 @@ def read_files(name):
 
 	t= np.array(floatify(t))
 	a = np.array(floatify(a))
-	ph = np.array(floatify(p))
+	p = np.array(floatify(p))
 	#p = np.unwrap(ph)
 
 	new_time = []

@@ -77,6 +77,8 @@ ax[2].plot(test_a.index, beta_model, label = 'beta')
 
 
 
+
+
 '''
 
 h_values = np.arange(55, 85, 0.1)
