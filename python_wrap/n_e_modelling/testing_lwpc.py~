@@ -1,0 +1,187 @@
+import numpy as np
+import matplotlib.pyplot as plt
+plt.ion()
+import datetime
+from reading_msk_files import read_files
+from pandas import Series
+from sunpy.time import parse_time
+from scipy import ndimage
+smooth = ndimage.filters.uniform_filter
+from sunpy import lightcurve as lc
+
+
+###lwpc data##
+res = np.loadtxt('24_lwpm_test.dat', dtype = 'str')
+date = 'Jul/24/2016'
+res = np.array(res)
+tim = []
+for i in range(len(res)):
+    tim.append(datetime.datetime.strptime(date+' '+res[:,0][i], '%b/%d/%Y %H:%M'))
+pha_lwpc = res[:,1]
+amp_lwpc = res[:,2]
+
+lwpc_amp = Series(amp_lwpc, index = tim)
+lwpc_pha = Series(pha_lwpc, index = tim)
+
+
+###msk data ##
+
+name, msk_time, amp_naa, pha_naa = read_files('NAA120160724.txt', '2016-07-24 00:00')
+
+msk_amp_real = Series(amp_naa, index = msk_time)+107
+msk_pha_real = Series(pha_naa, index = msk_time)+45
+
+msk_amp_flare = msk_amp_real.truncate('2016-07-24 11:00','2016-07-24 17:00')
+msk_pha_flare = msk_pha_real.truncate('2016-07-24 11:00','2016-07-24 17:00')
+
+
+#goes setup
+g = lc.GOESLightCurve.create(msk_amp_flare.index[0], msk_amp_flare.index[-1])
+gl = g.data['xrsb']
+gs = g.data['xrsa']
+
+#sid_series
+def make_sid_series(file_name):
+	a = np.loadtxt(file_name, comments = '#', delimiter = ',', dtype = 'str')
+	times = []
+	data = []
+	for i in range(len(a)):
+		t = datetime.datetime.strptime(a[i][0], "%Y-%m-%d %H:%M:%S")
+		times.append(t)
+        
+		data.append(a[i][1])
+    
+	for i in range(len(data)):
+		data[i] = float(data[i])
+    
+    
+	sid_full = Series(data, index = times)
+	#sid  = sid_full.truncate(t_start, t_end)
+	return sid_full
+
+sid_dataa = make_sid_series('BIR_sid_20160724_000000.txt')
+sid_flare = sid_dataa.truncate('2016-07-24 11:00','2016-07-24 17:00')
+
+
+#reading hprime and beta values
+res = np.loadtxt('h_and_beta_model.dat')
+h_prime = res[:,0]
+beta = res[:,1]
+phase = res[:,2]
+amp = res[:,3]
+dist = res[:,4]
+
+
+hh = np.arange(55, 85, 0.1)
+bb = np.arange(0.2, 0.5, 0.001)
+
+test = np.arange(0, len(bb)*len(bb), len(bb))
+#rows are same height, columns are change in beta
+amp_l = []
+pha_l = []
+for i in range(len(test)):
+    if test[i] != 89700:
+        amp_l.append(amp[test[i]:test[i+1]])
+        pha_l.append(phase[test[i]:test[i+1]])
+    else:
+        amp_l.append(amp[test[i]:])
+        pha_l.append(phase[test[i]:])
+
+amp_l = np.array(amp_l)
+pha_l = np.array(pha_l)
+
+##testing mode with chi squared
+
+phase_test = msk_pha_flare.resample('5min', how = 'mean')
+amp_test = msk_amp_flare.resample('5min', how = 'mean')
+amp_b = sid_flare.resample('5min', how = 'mean')
+
+
+indexx_phase = []
+indexx_amp = [] 
+for i in range(len(phase_test)):
+    yy = (phase - phase_test[i])**2
+    yyy = (amp - amp_b[i])**2
+    ind = np.where(yy == np.min(yy))[0][0]
+    ind_amp = np.where(yyy == np.min(yyy))[0][0]
+    indexx_phase.append(ind)
+    indexx_amp.append(ind_amp)
+
+
+
+
+
+
+
+#for i in range(len(test_a)):
+def plot_arrays():
+
+    for i in range(2):
+
+        beta_tick = np.arange(0, 301, 50)
+        print beta_tick
+        beta_label = np.arange(0.2, 0.51, 0.05)
+        h_tick = np.arange(0, 301, 50)
+        h_label = np.arange(55, 85.1, 5)
+
+        fig, ax = plt.subplots(2, figsize = (5, 9))
+        ax[0].imshow((-amp_l + amp_b[i])**2, origin = 'lower', cmap = 'Spectral_r')
+        ax[0].set_xticks(beta_tick)
+        ax[0].set_xticklabels(beta_label)
+        ax[0].set_yticks(h_tick)
+        ax[0].set_yticklabels(h_label)
+        ax[0].set_ylabel('H prime (km)')
+        ax[0].set_xlabel('Beta (km $^{-1}$')
+        ax[0].set_title(str(test_a.index[i]))
+        ax[0].colorbar()
+
+        ax[1].plot(test_a)
+        ax[1].axvline(test_a.index[i], ls = '--', color = 'k')
+        ax[1].set_ylabel('Amplitude dBuV/m')
+        ax[1].set_xlabel('Start time '+str(test_a.index[0])[0:16]+' UT')
+
+        if i < 10:
+            plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/n_e_modelling/plots_phase/test000'+str(i)+'.png')
+            plt.clf()
+        if i>9 and i <100:
+            plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/n_e_modelling/plots_phase/test00'+str(i)+'.png')
+            plt.clf()
+        else:
+            plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/n_e_modelling/plots_phase/test0'+str(i)+'.png')
+            plt.clf()
+
+
+
+
+
+
+
+
+
+
+def plot_models():
+    fig, ax = plt.subplots(figsize = (10,8))
+
+    h_tick = np.arange(0, 20, 5)
+    h_lab = np.arange(60, 80, 5)
+    b_tick = np.arange(0, 20, 5)
+    b_lab = np.arange(0.3, 0.50, 0.05)
+
+    plt.imshow(amp_l, origin = 'lower', cmap = 'viridis')
+    plt.xticks(b_tick, b_lab)
+    plt.xlabel('Beta (km$^{-1}$)')
+    plt.ylabel('H prime (km)')
+    plt.yticks(h_tick, h_lab)
+    cbar = plt.colorbar()
+    cbar.set_label('Amp (db)')
+    plt.title('Modeling Amp with different H and beta')
+
+    fig, ax = plt.subplots(figsize = (10,8))
+    plt.imshow(pha_l, origin = 'lower', cmap = 'viridis')
+    plt.xticks(b_tick, b_lab)
+    plt.xlabel('Beta (km$^{-1}$)')
+    plt.ylabel('H prime (km)')
+    plt.yticks(h_tick, h_lab)
+    cbar = plt.colorbar()
+    cbar.set_label('Phase Degrees')
+    plt.title('Modeling Phase with different H and beta')

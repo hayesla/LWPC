@@ -1,0 +1,72 @@
+import numpy as np
+import matplotlib.pyplot as plt
+plt.ion()
+import datetime
+from reading_msk_files import read_files
+from pandas import Series
+from sunpy.time import parse_time
+from scipy import ndimage
+smooth = ndimage.filters.uniform_filter
+from sunpy import lightcurve as lc
+
+
+###lwpc data##
+res = np.loadtxt('24_lwpm_test.dat', dtype = 'str')
+date = 'Jul/24/2016'
+res = np.array(res)
+tim = []
+for i in range(len(res)):
+    tim.append(datetime.datetime.strptime(date+' '+res[:,0][i], '%b/%d/%Y %H:%M'))
+pha_lwpc = res[:,1]
+amp_lwpc = res[:,2]
+
+lwpc_amp = Series(amp_lwpc, index = tim)
+lwpc_pha = Series(pha_lwpc, index = tim)
+
+
+###msk data ##
+
+name, msk_time, amp_naa, pha_naa = read_files('NAA120160724.txt', '2016-07-24 00:00')
+
+msk_amp_real = Series(amp_naa, index = msk_time)+107
+msk_pha_real = Series(pha_naa, index = msk_time)-90
+
+msk_amp_flare = msk_amp_real.truncate('2016-07-24 11:00','2016-07-24 17:00')
+msk_pha_flare = msk_pha_real.truncate('2016-07-24 11:00','2016-07-24 17:00')
+
+
+#goes setup
+g = lc.GOESLightCurve.create(msk_amp_flare.index[0], msk_amp_flare.index[-1])
+gl = g.data['xrsb']
+gs = g.data['xrsa']
+
+
+def make_sid_series(file_name):
+	a = np.loadtxt(file_name, comments = '#', delimiter = ',', dtype = 'str')
+	times = []
+	data = []
+	for i in range(len(a)):
+		t = datetime.datetime.strptime(a[i][0], "%Y-%m-%d %H:%M:%S")
+		times.append(t)
+        
+		data.append(a[i][1])
+    
+	for i in range(len(data)):
+		data[i] = float(data[i])
+    
+    
+	sid_full = Series(data, index = times)
+	sid  = sid_full.truncate(t_start, t_end)
+	return sid
+
+sid_dataa = make_sid_series('BIR_sid_20160724_000000.txt')
+
+#reading hprime and beta values
+res = np.loadtxt('h_and_beta.dat')
+h_prime = res[:,0]
+beta = res[:,1]
+phase = res[:,2]
+amp = res[:,3]
+dist = res[:,4]
+
+
