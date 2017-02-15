@@ -90,14 +90,16 @@ for i in range(len(test)):
         new.append(amp[test[i]:])
 new = np.array(new)
 dirr = '/home/laura/lwpc_test/lwpc/python_wrap/test_plots'
-for i in range(len(test_a)):
-    plt.contourf(bb, hh, (-new + test_a[i])**2)
-    if i < 10:
-        plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/test_plots/test00'+str(i)+'.png')
-        plt.clf()
-    else:
-        plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/test_plots/test0'+str(i)+'.png')
-        plt.clf()
+plot_all_movie = False
+if plot_all_movie:
+    for i in range(len(test_a)):
+        plt.contourf(bb, hh, (-new + test_a[i])**2)
+        if i < 10:
+            plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/test_plots/test00'+str(i)+'.png')
+            plt.clf()
+        else:
+            plt.savefig('/home/laura/lwpc_test/lwpc/python_wrap/test_plots/test0'+str(i)+'.png')
+            plt.clf()
 
 
 

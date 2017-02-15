@@ -12,18 +12,18 @@ mins = 0
 while mins < 1440:
 #parameters to do into lwpc inp file
 	workdir='/home/laura/lwpc_test/lwpc/python_wrap'
-	i_d = 'test_file'
-	freq = '24.000'
-	tx_lat = '44.633'
-	tx_lon = '67.283'
-	rx_lat = '53.091'
-	rx_lon = '-7.913'
+	i_d = 'test_file_dho'
+	freq = '23.400'
+	tx_lat = '53.1'
+	tx_lon = '7.6'
+	rx_lat = '55.267'
+	rx_lon = '-3.1757'
 	power = '1.000e+03'
 	date = 'Jul/24/2016'
 	hhmm = '%02d:%02d' %(mins/60, mins%60)
 	
 	#creating inp file for the lwpc code
-	f = open('test_file.inp', 'w')
+	f = open('test_file_dho.inp', 'w')
 	f.write('file-mds '+ workdir +'\n')
 	f.write('file-lwf '+ workdir +'\n')
 	f.write('tx '+ i_d +'\n')
@@ -37,19 +37,19 @@ while mins < 1440:
 	f.close()
 	
 	#will run LWPC given the filename
-	input_file = 'test_file'
+	input_file = 'test_file_dho'
 	run_command = './test ' + input_file
 	run_lwpc = subprocess.call(run_command, shell = True)
 	print hhmm
 
-	pha, amp, dist = read_lwpc_log('test_file.log')
-	wr = open('24_lwpm_test.dat', 'a')
+	pha, amp, dist = read_lwpc_log('test_file_dho.log')
+	wr = open('24_test_dho.dat', 'a')
 	wr.write(hhmm + ' '  + str(pha[-1]) + ' ' + str(amp[-1]) + ' ' + str(dist[-1]) + '\n')
 	wr.close()
 
 	mins = mins+10
 
-res = np.loadtxt('24_lwpm_test.dat', dtype = 'str')
+res = np.loadtxt('24_test_dho.dat', dtype = 'str')
 res = np.array(res)
 tim = []
 for i in range(len(res)):
