@@ -12,7 +12,7 @@ import matplotlib.dates as dates
 
 import seaborn as sns
 sns.set_style('ticks',{'xtick.direction':'in','ytick.direction':'in'})
-sns.set_context('paper', font_scale=2)
+sns.set_context('paper', font_scale=1.8)
 
 
 ###lwpc data##
@@ -222,7 +222,7 @@ def plot_elec_den(cmapp = 'gnuplot'):
 
 
 #function to plot 3d map of e density of time and h
-def plot_elec_den_paper(cmapp = 'gnuplot'):
+def plot_elec_den_paper(cmapp = 'seismic'):
     h_p = smooth(h_prime[indexx_amp],10)
     bet = smooth(beta[indexx_amp],10)
     h  = np.arange(65, 85,0.1)
@@ -244,15 +244,18 @@ def plot_elec_den_paper(cmapp = 'gnuplot'):
     ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
     ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
     ax[0].xaxis.grid(True, which="major")
+    ax[0].set_title('VLF Amplitude Pulsations')
 
     ax1 = ax[1].imshow(np.log10(elec.T), aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp)
     ax[1].xaxis_date()
     date_format = dates.DateFormatter('%H:%M')
     ax[1].xaxis.set_major_formatter(date_format)
-    
+    ax[1].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[1].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].xaxis.grid(True, which="major", color = 'grey')
     ax[1].set_ylabel('Altitude (km)')
     ax[1].set_xlabel('Start time 24-Jul-2016 11:00 UT')
-
+    ax[1].set_title('Electron Density in Lower Ionosphere')
 
     cbaxes = fig.add_axes([0.85, 0.08, 0.02, 0.4]) 
     cb = plt.colorbar(ax1, cax = cbaxes)  
