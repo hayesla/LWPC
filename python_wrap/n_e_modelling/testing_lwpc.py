@@ -220,13 +220,13 @@ def plot_elec_den(cmapp = 'gnuplot'):
     elec = np.array(elec)
 
     x_lims = list([datetime.datetime.strptime(str(amp_b.index[0]), '%Y-%m-%d %H:%M:%S'), datetime.datetime.strptime(str(amp_b.index[-1]), '%Y-%m-%d %H:%M:%S')])
-    x_lims = mdates.date2num(x_lims)
+    x_lims = dates.date2num(x_lims)
     
     fig, ax = plt.subplots(figsize = (10, 6))
 
     cax = ax.imshow(np.log10(elec.T), aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp)
     ax.xaxis_date()
-    date_format = mdates.DateFormatter('%H:%M:%S')
+    date_format = dates.DateFormatter('%H:%M:%S')
     ax.xaxis.set_major_formatter(date_format)
     
     ax.set_ylabel('Altitude (km)')
@@ -374,11 +374,11 @@ def plot_elec_den_paper(cmapp = 'seismic'):
     x_lims = list([datetime.datetime.strptime(str(amp_b.index[0]), '%Y-%m-%d %H:%M:%S'), datetime.datetime.strptime(str(amp_b.index[-1]), '%Y-%m-%d %H:%M:%S')])
     x_lims = dates.date2num(x_lims)
     
-    fig, ax = plt.subplots(2, figsize = (10, 10), sharex = True)
+    fig, ax = plt.subplots(2, figsize = (7, 10), sharex = True)
     testy = np.array(amp_b)
     ax[0].plot(sidy.index.to_pydatetime(), sidy, sns.xkcd_rgb["pale red"], label = 'BIRR VLF')
     ax[0].plot(sidy.index, smooth(sidy, 120), color = 'k', lw = 2, label = 'Smoothed BIRR VLF')
-    ax[0].set_ylabel('Amplitude in dBV')
+    ax[0].set_ylabel('Amplitude in dB')
     ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
     ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
     ax[0].xaxis.grid(True, which="major")
@@ -402,6 +402,8 @@ def plot_elec_den_paper(cmapp = 'seismic'):
     cb.set_label('$\mathrm{log_{10}(N_e(m^{-3}))}$')
     fig.autofmt_xdate()
     plt.tight_layout()
+    plt.subplots_adjust(right = 0.82)
+   
 
 
 
