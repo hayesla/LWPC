@@ -12,7 +12,7 @@ import matplotlib.dates as dates
 import pandas as pd
 import seaborn as sns
 sns.set_style('ticks',{'xtick.direction':'in','ytick.direction':'in'})
-sns.set_context('paper', font_scale=1.8)
+sns.set_context('paper', font_scale=1.5)
 from scipy.optimize import curve_fit
 
 ###lwpc data##
@@ -36,8 +36,8 @@ name, msk_time, amp_naa, pha_naa = read_files('NAA120160724.txt', '2016-07-24 00
 msk_amp_real = Series(amp_naa, index = msk_time)+107
 msk_pha_real = Series(pha_naa, index = msk_time)+45
 
-msk_amp_flare = msk_amp_real.truncate('2016-07-24 11:30','2016-07-24 16:00')
-msk_pha_flare = msk_pha_real.truncate('2016-07-24 11:30','2016-07-24 16:00')
+msk_amp_flare = msk_amp_real.truncate('2016-07-24 11:00','2016-07-24 16:00')
+msk_pha_flare = msk_pha_real.truncate('2016-07-24 11:00','2016-07-24 16:00')
 
 
 peak_t = np.loadtxt('gl_peaks.dat', dtype = 'str')
@@ -72,7 +72,7 @@ def make_sid_series(file_name):
 
 sid_dataa = make_sid_series('BIR_sid_20160724_000000.txt')
 sid_dataa = 20*np.log10(sid_dataa+5) - 61 + 107
-sid_flare = sid_dataa.truncate('2016-07-24 11:30','2016-07-24 16:00')
+sid_flare = sid_dataa.truncate('2016-07-24 11:30','2016-07-24 15:30')
 
 s_a = np.array(sid_flare)
 s_a[9598: 9623] = np.nan #for 11:30
@@ -84,6 +84,7 @@ sidy = Series(new_sa, index = sid_flare.index)
 
 #reading hprime and beta values
 res = np.loadtxt('test_h_and_beta.dat')
+#res = np.loadtxt('h_and_beta_test_final.dat')
 h_prime = res[:,0]
 beta = res[:,1]
 phase = res[:,2]
@@ -101,6 +102,10 @@ dist = res[:,4]
 hh = np.arange(60, 75.1, 0.1)
 bb = np.arange(0.3, 0.5, 0.001)
 
+
+#for h_and_beta_test_final.dat
+#hh = np.arange(60, 77, 0.1)
+#bb = np.arange(0.28, 0.5, 0.01)
 
 test = np.arange(0, len(bb)*len(hh), len(bb))
 #rows are same height, columns are change in beta
@@ -148,7 +153,7 @@ for i in range(len(datt)):
 
 
 
-plt.plot(amp_b.index, beta[indexx_amp])
+#plt.plot(amp_b.index, beta[indexx_amp])
 
 
 #for i in range(len(test_a)):
@@ -207,6 +212,15 @@ def plot_arrays():
 def n_e(h, h_prime, beta):
     return 1.43e13*np.exp(-0.15*h_prime)*np.exp((beta - 0.15)*(h-h_prime))
 
+
+
+def plot_dif_h_p():
+	h = np.arange(60, 90,1)
+	h_prime = [60, 65, 70, 75, 80]
+	for i in range(len(h_prime)):
+		plt.plot(n_e(h, h_prime[i], 0.3), h, label = 'H\'= '+str(h_prime[i]))
+	plt.legend()
+
 #function to plot 3d map of e density of time and h
 def plot_elec_den(cmapp = 'gnuplot'):
     h_p = smooth(h_prime[indexx_amp],10)
@@ -243,6 +257,136 @@ def plot_elec_den(cmapp = 'gnuplot'):
 # Recombination Coeff
 #
 ############################
+
+def fitLine(x, y, alpha=0.05, newx=[]):
+    ''' Fit a curve to the data using a least squares 1st order polynomial fit '''
+    
+    # Summary data
+    n = len(x)			   # number of samples     
+    
+    Sxx = np.sum(x**2) - np.sum(x)**2/n
+#    Syy = np.sum(y**2) - np.sum(y)**2/n    # not needed here
+    Sxy = np.sum(x*y) - np.sum(x)*np.sum(y)/n    
+    mean_x = np.mean(x)
+    mean_y = np.mean(y)
+    
+    # Linefit
+    b = Sxy/Sxx
+    a = mean_y - b*mean_x
+    
+    # Residuals
+    fit = lambda xx: a + b*xx    
+    residuals = y - fit(x)
+    
+    var_res = np.sum(residuals**2)/(n-2)
+    sd_res = np.sqrt(var_res)
+    
+    # Confidence intervals
+    se_b = sd_res/np.sqrt(Sxx)
+    se_a = sd_res*np.sqrt(np.sum(x**2)/(n*Sxx))
+    
+    df = n-2                            # degrees of freedom
+    tval = stats.t.isf(alpha/2., df) 	# appropriate t value
+    
+    ci_a = a + tval*se_a*np.array([-1,1])
+    ci_b = b + tval*se_b*np.array([-1,1])
+
+    # create series of new test x-values to predict for
+    npts = 100
+    px = np.linspace(np.min(x)-0.5,np.max(x)+0.5,num=npts)
+    
+    se_fit     = lambda x: sd_res * np.sqrt(  1./n + (x-mean_x)**2/Sxx)
+    se_predict = lambda x: sd_res * np.sqrt(1+1./n + (x-mean_x)**2/Sxx)
+    
+    print 'Summary: a={0:5.4f}+/-{1:5.4f}, b={2:5.4f}+/-{3:5.4f}'.format(a,tval*se_a,b,tval*se_b)
+    print 'Confidence intervals: ci_a=({0:5.4f} - {1:5.4f}), ci_b=({2:5.4f} - {3:5.4f})'.format(ci_a[0], ci_a[1], ci_b[0], ci_b[1])
+    print 'Residuals: variance = {0:5.4f}, standard deviation = {1:5.4f}'.format(var_res, sd_res)
+    print 'alpha = {0:.3f}, tval = {1:5.4f}, df={2:d}'.format(alpha, tval, df)
+    
+    # Return info
+    ri = {'residuals': residuals, 
+        'var_res': var_res,
+        'sd_res': sd_res,
+        'alpha': alpha,
+        'tval': tval,
+        'df': df}
+    return px, fit(px), x, y, fit(x), tval*se_fit(px)
+from scipy import stats
+def paper_recombo():
+    h_p = smooth(h_prime[indexx_amp],10)
+    bet = smooth(beta[indexx_amp],10)
+    h  = np.arange(65, 85,0.1)
+    elec = []
+    for i in range(len(h_p)):
+        test = n_e(h, h_p[i], bet[i])
+        elec.append(test)
+
+    elec = np.array(elec)
+    elec = elec.T
+
+
+    #file containing info of max peaks in GOES
+    a = pd.read_csv('peak_n_e.txt', delimiter = ' ')
+    
+    #max GOES flux at each peak
+    I_max = a['max_I']
+
+    #time between peaks
+    dt = 90.
+
+    #elec den at max GOES Peak for each height
+    h_elec_max = []
+    for i in range(len(elec)):
+        ff = elec[i][indd]
+        h_elec_max.append(ff)
+
+    alphas = []
+    for i in range(len(h_elec_max)):
+        alpha = 1./(2*dt*h_elec_max[i])
+        alphas.append(alpha)
+
+    alphas = np.array(alphas)
+    each_peak = []
+    for i in range(len(I_max)):
+        each_peak.append(alphas[:,i])
+	
+    from scipy import stats
+    import itertools
+
+    palette = itertools.cycle(sns.color_palette())
+
+    hhh = [0, 51, 101, 151, -1]
+    lala = [65, 70, 75, 80, 85]
+    for i in range(len(hhh)):
+	a = make_df(np.array(I_max*1e6), (alphas[hhh[i]]), name1 = 'Flux Max', name2 = 'Recombination Coeff')
+	aa = a.sort(columns = 'Flux Max')
+	
+	px, fit_px, x, y, fit_x, tval_se_fit_x = fitLine(np.array(aa['Flux Max']), np.array(np.log10(aa['Recombination Coeff'])))
+	
+        plt.plot(x, 10**(y),color = next(palette), label = str(lala[i])+' km', marker = '.', ls = ' ', ms = 12)
+	if i == 0:
+	    plt.text(x[0]-0.05*x[0], 10**(y[0])+0.1*10**(y[0]), str(aa.index[0]), fontsize = 15)
+	    for j in range(1, len(x)):
+	        plt.text(x[j]+0.01*x[j], 10**(y[j])+0.1*10**(y[j]), str(aa.index[j]), fontsize = 15)
+
+
+
+	plt.plot(px,10**(fit_px))
+	#x.sort()
+	#plt.fill_between(x, 10**(fit_x+tval_se_fit_x),10**(fit_x-tval_se_fit_x), alpha = 0.3)
+	plt.fill_between(px, 10**(fit_px+tval_se_fit_x),10**(fit_px-tval_se_fit_x), alpha = 0.2)
+        #plt.plot(x, 10**(fit_x+tval_se_fit_x))
+        #plt.plot(x, 10**(fit_x-tval_se_fit_x))
+
+	plt.xlim(0.6, 7.4)
+	plt.xlabel('X-ray Flux in units of $\mathrm{10^{-6}}$ $\mathrm{Wm^{-2}}}$')
+
+	plt.yscale('log')
+	plt.legend(loc = 'lower left')
+	#plt.xscale('log')
+	plt.ylabel('$\\alpha_{eff}$  ($\mathrm{m^{-3}s^{-1}}$)')
+
+
 def recombo():
     h_p = smooth(h_prime[indexx_amp],10)
     bet = smooth(beta[indexx_amp],10)
@@ -283,11 +427,37 @@ def recombo():
 
     plotting_lines = False
     if plotting_lines:
-	    for i in range(0,len(alphas),40):
-		a = make_df(np.array(I_max), np.log10(alphas[i]), name1 = 'Flux Max', name2 = 'Recombination Coeff')
-		sns.regplot(x = 'Flux Max', y = 'Recombination Coeff', data = a, scatter_kws={"s": 50}, label = str(h[i])+' km')
-		plt.legend()
+	    hhh = [0, 51, 101, 151, -1]
+	    lala = [65, 70, 75, 80, 85]
+	    for i in range(len(hhh)):
+		a = make_df(np.array(I_max*1e6), (alphas[hhh[i]]), name1 = 'Flux Max', name2 = 'Recombination Coeff')
+		sns.regplot(x = 'Flux Max', y = 'Recombination Coeff', data = a, scatter_kws={"s": 50}, label = str(lala[i])+' km')
+		plt.legend(loc = 'lower left')
+		plt.xlabel('Flux Peak (x 10$^6$) (Wm$^{-2}$)')
+		plt.yscale('log')
+		plt.xscale('log')
+		plt.ylabel('log10($ \mathrm{\\alpha_{eff} (m^3s^{-1}))}$')
 	    
+
+    from scipy import stats
+    import itertools
+    plotting_l = True
+    palette = itertools.cycle(sns.color_palette())
+    if plotting_l:
+	    hhh = [0, 51, 101, 151, -1]
+	    lala = [65, 70, 75, 80, 85]
+	    for i in range(len(hhh)):
+		a = make_df(np.array(I_max*1e6), (alphas[hhh[i]]), name1 = 'Flux Max', name2 = 'Recombination Coeff')
+		aa = a.sort(columns = 'Flux Max')
+		slope, intercept, r_value, p_value, std_err = stats.linregress(aa['Flux Max'], np.log10(aa['Recombination Coeff']))
+		plt.plot(np.array(aa['Flux Max']), np.array(aa['Recombination Coeff']), marker = '.', ls = ' ', ms = 12, color = next(palette), label = str(lala[i])+' km')
+		plt.plot(np.array(aa['Flux Max']), np.array(10**(slope*aa['Flux Max'] + intercept)))
+		#plt.legend(loc = 'lower left')
+		plt.xlabel('X-ray Flux in units of $\mathrm{10^{-6} Wm^{-2}}$')
+		plt.yscale('log')
+		plt.legend(loc = 'lower left')
+		#plt.xscale('log')
+		plt.ylabel('$ \\alpha_{eff} \mathrm{(m^3s^{-1})}$')
 
 
     a_test = (0.51e-6)*np.exp(-0.165*h)
@@ -352,17 +522,50 @@ def plot_corr_e():
         sns.regplot(x = 'amp', y = 'elec', data = a, scatter_kws={"s": 80}, label = str(h[i])+' km')
         plt.legend()
     
-    	
 
+
+max_e = [4.2e8, 1.6e9, 3.38e9, 1.2e9]
+min_e = [2e8, 3.4e8, 1.4e9, 1.2e9]
+max_g = [1.6e-6,2.5e-6, 1.5e-6,  5.6e-6]
+min_g = [ 4.2e-7, 1.5e-6, 1.6e-6,1.86e-6]   	
+
+
+
+def elec_height():
+
+    h_p = smooth(h_prime[indexx_amp],10)
+    bet = smooth(beta[indexx_amp],10)
+
+    h  = np.arange(65, 85,0.1)
+    elec = []
+    for i in range(len(h_p)):
+        test = n_e(h, h_p[i], bet[i])
+        elec.append(test)
+
+    elec = np.array(elec)
+    elec = elec.T
+
+    fig, ax = plt.subplots()
+    ax.plot(amp_b.index, elec[0], label = '65km')
+    ax.plot(amp_b.index, elec[51], label = '70km')
+    ax.plot(amp_b.index, elec[101], label = '75km')
+    ax.plot(amp_b.index, elec[151], label = '80km')
+    ax.plot(amp_b.index, elec[199], label = '85km')
+    ax.xaxis_date()
+    date_format = dates.DateFormatter('%H:%M:%S')
+    ax.xaxis.set_major_formatter(date_format)
+
+    ax.grid()
 
 ######################################################
 #
 # function to plot 3d map of e density of time and h
 #
 #######################################################
-def plot_elec_den_paper(cmapp = 'seismic'):
+def plot_elec_den_paper(cmapp = 'magma'):
     h_p = smooth(h_prime[indexx_amp],10)
     bet = smooth(beta[indexx_amp],10)
+    
     h  = np.arange(65, 85,0.1)
     elec = []
     for i in range(len(h_p)):
@@ -378,11 +581,11 @@ def plot_elec_den_paper(cmapp = 'seismic'):
     testy = np.array(amp_b)
     ax[0].plot(sidy.index.to_pydatetime(), sidy, sns.xkcd_rgb["pale red"], label = 'BIRR VLF')
     ax[0].plot(sidy.index, smooth(sidy, 120), color = 'k', lw = 2, label = 'Smoothed BIRR VLF')
-    ax[0].set_ylabel('Amplitude in dB')
+    ax[0].set_ylabel('Amplitude (dB)')
     ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
     ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
     ax[0].xaxis.grid(True, which="major")
-    ax[0].set_title('(a) VLF Amplitude Pulsations')
+    ax[0].set_title('VLF Amplitude Pulsations')
 
     ax1 = ax[1].imshow(np.log10(elec.T), aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp)
     ax[1].xaxis_date()
@@ -393,7 +596,7 @@ def plot_elec_den_paper(cmapp = 'seismic'):
     ax[1].xaxis.grid(True, which="major", color = 'grey')
     ax[1].set_ylabel('Altitude (km)')
     ax[1].set_xlabel('Start time 24-Jul-2016 11:00 UT')
-    ax[1].set_title('(b) Electron Density in Lower Ionosphere')
+    ax[1].set_title('Electron Density in Lower Ionosphere')
 
     cbaxes = fig.add_axes([0.85, 0.08, 0.02, 0.4]) 
     cb = plt.colorbar(ax1, cax = cbaxes)  
@@ -403,9 +606,238 @@ def plot_elec_den_paper(cmapp = 'seismic'):
     fig.autofmt_xdate()
     plt.tight_layout()
     plt.subplots_adjust(right = 0.82)
+
+import matplotlib.colors as colors   
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+def plot_elec_den_paper2(cmapp = 'magma'):
+    h_p = smooth(h_prime[indexx_amp],10)
+    bet = smooth(beta[indexx_amp],10)
+    
+    h  = np.arange(65, 85,0.1)
+    elec = []
+    for i in range(len(h_p)):
+        test = n_e(h, h_p[i], bet[i])
+        elec.append(test)
+
+    elec = np.array(elec)
+
+    x_lims = list([datetime.datetime.strptime(str(amp_b.index[0]), '%Y-%m-%d %H:%M:%S'), datetime.datetime.strptime(str(amp_b.index[-1]), '%Y-%m-%d %H:%M:%S')])
+    x_lims = dates.date2num(x_lims)
+    
+    fig, ax = plt.subplots(3, figsize = (6, 16), sharex = True)
+    testy = np.array(amp_b)
+    ax[0].plot(sidy.index.to_pydatetime(), sidy, sns.xkcd_rgb["pale red"], label = 'BIRR VLF')
+    ax[0].plot(sidy.index, smooth(sidy, 120), color = 'k', lw = 2, label = 'Smoothed BIRR VLF')
+    ax[0].set_ylabel('Amplitude (dB)')
+    ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[0].xaxis.grid(True, which="major")
+    #ax[0].set_title('VLF Amplitude Pulsations')
+    ax[0].text('2016-07-24 11:41', 62.8, 'a', weight = 'bold', fontsize = 18)
+    
+
+    ax1 = ax[1].imshow(elec.T, aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp, norm = colors.LogNorm())
+    ax[1].xaxis_date()
+    date_format = dates.DateFormatter('%H:%M')
+    ax[1].xaxis.set_major_formatter(date_format)
+    ax[1].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[1].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].xaxis.grid(True, which="major", color = 'grey')
+    ax[1].set_ylabel('Altitude (km)')
+    ax[1].text('2016-07-24 11:41', 83, 'b', weight = 'bold', color = 'white', fontsize = 18)
+    #ax[1].set_xlabel('Start time 24-Jul-2016 11:00 UT')
+    #ax[1].set_title('Electron Density in Lower Ionosphere')
+    #divider = make_axes_locatable(ax[1])
+    #cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbaxes = fig.add_axes([0.82, 0.375, 0.023, 0.299]) 
+    cb = plt.colorbar(ax1, cax = cbaxes)  
+
+    #cbar = fig.colorbar(cax, orientation = 'horizontal', position = 'top')
+    cb.set_label('Electron Density (m$^{-3}$)')
    
+    ax[2].plot(amp_b.index, elec[:,199], label = '85 km')
+    #ax[2].plot(amp_b.index, elec[:,151], label = '80 km')
+    ax[2].plot(amp_b.index, elec[:,101], label = '75 km')
+    #ax[2].plot(amp_b.index, elec[:,51], label = '70 km')
+    ax[2].plot(amp_b.index, elec[:,0], label = '65 km')
+
+    
+    ax[2].xaxis.set_major_formatter(date_format)
+    ax[2].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[2].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[2].xaxis.grid(True, which="major")
+    ax[2].set_xlabel('Start time 24-Jul-2016 11:30 UT')
+
+    ax[2].set_xlim(amp_b.index[0], amp_b.index[-1])
+    ax[2].text('2016-07-24 11:41', 5e10, 'c', weight = 'bold', fontsize = 18)
+    ax[2].set_yscale('log')
+    ax[2].set_ylabel('Electon Density (m$^{-3}$)')
+    ax[2].legend(loc = 'upper right')
+
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    plt.subplots_adjust(right = 0.82)
+   
+def plot_h_b_rev():
+    h_p = Series(smooth(h_prime[indexx_amp],10), index = amp_b.index)
+    bet = Series(smooth(beta[indexx_amp],10), index = amp_b.index)
+    fig, ax = plt.subplots(2, figsize = (7, 10),sharex = True)
+    ax[0].plot(h_p, label = 'H\'', color = 'k')
+    ax[1].plot(bet, label = r'$\beta$', color = 'grey', lw = 1.5)
+    ax[1].set_ylabel(r'$\beta$ (km$^{-1}$)')
+    ax[0].set_ylabel('H\' (km)')
+
+    date_format = dates.DateFormatter('%H:%M')
+    ax[0].xaxis.set_major_formatter(date_format)
+    ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].set_xlim(amp_b.index[0], amp_b.index[-1])
+    ax[0].xaxis.grid(True, which="major", color = 'grey', lw = 0.2)
+    ax[1].xaxis.grid(True, which="major", color = 'grey', lw = 0.2)
+    ax[0].legend()
+    ax[1].legend(loc = 'upper left')
+    ax[1].set_xlabel('Start time 24-Jul-2016 11:30 UT')
+
+def plot_elec_den_paper_rev(cmapp = 'magma'):
+    h_p = smooth(h_prime[indexx_amp],10)
+    bet = smooth(beta[indexx_amp],10)
+    
+    h  = np.arange(65, 85,0.1)
+    elec = []
+    for i in range(len(h_p)):
+        test = n_e(h, h_p[i], bet[i])
+        elec.append(test)
+
+    elec = np.array(elec)
+
+    x_lims = list([datetime.datetime.strptime(str(amp_b.index[0]), '%Y-%m-%d %H:%M:%S'), datetime.datetime.strptime(str(amp_b.index[-1]), '%Y-%m-%d %H:%M:%S')])
+    x_lims = dates.date2num(x_lims)
+    
+    fig, ax = plt.subplots(2, figsize = (7, 10), sharex = True)
+    testy = np.array(amp_b)
+
+   
+    ax1 = ax[0].imshow(elec.T, aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp, norm = colors.LogNorm())
+    ax[0].xaxis_date()
+    date_format = dates.DateFormatter('%H:%M')
+    ax[0].xaxis.set_major_formatter(date_format)
+    ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[0].xaxis.grid(True, which="major", color = 'grey')
+    ax[0].set_ylabel('Altitude (km)')
+    ax[0].text('2016-07-24 11:41', 83, 'a', weight = 'bold', color = 'white', fontsize = 22)
+    #ax[1].set_xlabel('Start time 24-Jul-2016 11:00 UT')
+    #ax[1].set_title('Electron Density in Lower Ionosphere')
+    #divider = make_axes_locatable(ax[0])
+    #cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbaxes = fig.add_axes([0.82, 0.54, 0.03, 0.44]) 
+    cb = plt.colorbar(ax1, cax = cbaxes)  
+
+    #cbar = fig.colorbar(cax, orientation = 'horizontal', position = 'top')
+    cb.set_label('Electron Density (m$^{-3}$)')
+   
+    ax[1].plot(amp_b.index, elec[:,199], label = '85 km')
+    #ax[2].plot(amp_b.index, elec[:,151], label = '80 km')
+    ax[1].plot(amp_b.index, elec[:,101], label = '75 km')
+    #ax[2].plot(amp_b.index, elec[:,51], label = '70 km')
+    ax[1].plot(amp_b.index, elec[:,0], label = '65 km')
+
+    
+    ax[1].xaxis.set_major_formatter(date_format)
+    ax[1].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[1].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].xaxis.grid(True, which="major")
+    ax[1].set_xlabel('Start time 24-Jul-2016 11:30 UT')
+
+    ax[1].set_xlim(amp_b.index[0], amp_b.index[-1])
+    ax[1].text('2016-07-24 11:41', 1.5e11, 'b', weight = 'bold', fontsize = 22)
+    ax[1].set_yscale('log')
+    ax[1].set_ylabel('Electon Density (m$^{-3}$)')
+    ax[1].legend(loc = 'upper right', fontsize = 15)
+
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    plt.subplots_adjust(right = 0.81, left = 0.14, top = 0.98, bottom = 0.06)
 
 
+def plot_elec_den_paper_review_h_p2(cmapp = 'magma'):
+    h_p = smooth(h_prime[indexx_amp],10)-0.51
+    bet = smooth(beta[indexx_amp],10)
+    
+    h  = np.arange(65, 85,0.1)
+    elec = []
+    for i in range(len(h_p)):
+        test = n_e(h, h_p[i], bet[i])
+        elec.append(test)
+
+    elec = np.array(elec)
+
+    x_lims = list([datetime.datetime.strptime(str(amp_b.index[0]), '%Y-%m-%d %H:%M:%S'), datetime.datetime.strptime(str(amp_b.index[-1]), '%Y-%m-%d %H:%M:%S')])
+    x_lims = dates.date2num(x_lims)
+    
+    fig, ax = plt.subplots(3, figsize = (6, 16), sharex = True)
+    testy = np.array(amp_b)
+    ln1 = ax[0].plot(amp_b.index, h_p, label = 'H\'', color = 'k')
+    axy2 = ax[0].twinx()
+    ln2 = axy2.plot(amp_b.index, bet, label = r'$\beta$', color = 'grey')
+    ax[0].set_ylabel('H\' (km)')
+    axy2.set_ylabel(r'$\beta$ (km$^{-1})$', color = 'grey')
+    ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[0].xaxis.grid(True, which="major")
+    #ax[0].set_title('VLF Amplitude Pulsations')
+    ax[0].text('2016-07-24 11:41', 73, 'a', weight = 'bold', fontsize = 18)
+    ax[0].set_ylim(62, 74.1)
+
+    ax[0].text('2016-07-24 15:05', 71, 'H\'')
+    axy2.text('2016-07-24 15:05', 0.325, r'$\beta$', color = 'grey')
+
+    lns = ln1 + ln2
+    labs = [l.get_label() for l in lns]
+    #ax[0].legend(lns, labs, loc = 'center right')
+    ax1 = ax[1].imshow(elec.T, aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp, norm = colors.LogNorm())
+    ax[1].xaxis_date()
+    date_format = dates.DateFormatter('%H:%M')
+    ax[1].xaxis.set_major_formatter(date_format)
+    ax[1].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[1].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].xaxis.grid(True, which="major", color = 'grey')
+    ax[1].set_ylabel('Altitude (km)')
+    ax[1].text('2016-07-24 11:41', 83, 'b', weight = 'bold', color = 'white', fontsize = 18)
+    #ax[1].set_xlabel('Start time 24-Jul-2016 11:00 UT')
+    #ax[1].set_title('Electron Density in Lower Ionosphere')
+    #divider = make_axes_locatable(ax[1])
+    #cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbaxes = fig.add_axes([0.82, 0.375, 0.023, 0.299]) 
+    cb = plt.colorbar(ax1, cax = cbaxes)  
+
+    #cbar = fig.colorbar(cax, orientation = 'horizontal', position = 'top')
+    cb.set_label('Electron Density (m$^{-3}$)')
+   
+    ax[2].plot(amp_b.index, elec[:,199], label = '85 km')
+    #ax[2].plot(amp_b.index, elec[:,151], label = '80 km')
+    ax[2].plot(amp_b.index, elec[:,101], label = '75 km')
+    #ax[2].plot(amp_b.index, elec[:,51], label = '70 km')
+    ax[2].plot(amp_b.index, elec[:,0], label = '65 km')
+
+    
+    ax[2].xaxis.set_major_formatter(date_format)
+    ax[2].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[2].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[2].xaxis.grid(True, which="major")
+    ax[2].set_xlabel('Start time 24-Jul-2016 11:30 UT')
+
+    ax[2].set_xlim(amp_b.index[0], amp_b.index[-1])
+    ax[2].text('2016-07-24 11:41', 1.5e11, 'c', weight = 'bold', fontsize = 18)
+    ax[2].set_yscale('log')
+    ax[2].set_ylabel('Electon Density (m$^{-3}$)')
+    ax[2].legend(loc = 'upper right')
+
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    plt.subplots_adjust(right = 0.82)
+   
 
 
 def plot_models():
@@ -434,3 +866,122 @@ def plot_models():
     cbar = plt.colorbar()
     cbar.set_label('Phase Degrees')
     plt.title('Modeling Phase with different H and beta')
+
+
+
+def thesis_hb():
+    h_p = Series(smooth(h_prime[indexx_amp],10), index = amp_b.index)
+    bet = Series(smooth(beta[indexx_amp],10), index = amp_b.index)
+    fig, ax = plt.subplots(2, figsize = (6, 10),sharex = True)
+    ax[0].plot(h_p, label = '$H$\'', color = 'k')
+    ax[1].plot(bet, label = r'$\beta$', color = 'grey', lw = 1.5)
+    ax[1].set_ylabel(r'$\beta$ (km$^{-1}$)')
+    ax[0].set_ylabel('$H$\' (km)')
+
+    date_format = dates.DateFormatter('%H:%M')
+    ax[0].xaxis.set_major_formatter(date_format)
+    ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].set_xlim(amp_b.index[0], amp_b.index[-1])
+    ax[0].xaxis.grid(True, which="major", color = 'grey', lw = 0.2)
+    ax[1].xaxis.grid(True, which="major", color = 'grey', lw = 0.2)
+    ax[0].legend(loc = 'upper right')
+    ax[1].legend(loc = 'upper right')
+    ax[1].set_xlabel('Start time 24-Jul-2016 11:30 UT')
+
+    ax[1].text(0.03, 0.94, 'b.',
+
+        transform=ax[1].transAxes)
+    ax[0].text(0.03, 0.94, 'a.',
+
+        transform=ax[0].transAxes)
+
+
+    #ax[1].text('2016-07-24 15:05', 0.325, r'$\beta$', color = 'grey')
+    #ax[0].text('2016-07-24 15:05', 71, 'H\'')
+    plt.tight_layout()
+    plt.subplots_adjust(hspace = 0.01)
+
+
+
+
+
+
+
+
+
+
+def thesis_elec(cmapp = 'magma_r'):
+    h_p = smooth(h_prime[indexx_amp],10)
+    bet = smooth(beta[indexx_amp],10)
+    
+    h  = np.arange(65, 85,0.1)
+    elec = []
+    for i in range(len(h_p)):
+        test = n_e(h, h_p[i], bet[i])
+        elec.append(test)
+
+    elec = np.array(elec)
+
+    x_lims = list([datetime.datetime.strptime(str(amp_b.index[0]), '%Y-%m-%d %H:%M:%S'), datetime.datetime.strptime(str(amp_b.index[-1]), '%Y-%m-%d %H:%M:%S')])
+    x_lims = dates.date2num(x_lims)
+    
+    fig, ax = plt.subplots(2, figsize = (7, 10), sharex = True)
+    testy = np.array(amp_b)
+
+   
+    ax1 = ax[0].imshow(elec.T, aspect = 'auto', origin = 'lower', extent = [x_lims[0], x_lims[1], 65, 85], cmap = cmapp, norm = colors.LogNorm())
+    ax[0].xaxis_date()
+    date_format = dates.DateFormatter('%H:%M')
+    ax[0].xaxis.set_major_formatter(date_format)
+    ax[0].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[0].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[0].xaxis.grid(True, which="major", color = 'grey')
+    ax[0].set_ylabel('Altitude (km)')
+    #ax[0].text('2016-07-24 11:41', 83, 'a')#, weight = 'bold', color = 'white', fontsize = 22)
+    #ax[1].set_xlabel('Start time 24-Jul-2016 11:00 UT')
+    #ax[1].set_title('Electron Density in Lower Ionosphere')
+    #divider = make_axes_locatable(ax[0])
+    #cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbaxes = fig.add_axes([0.82, 0.535, 0.03, 0.445]) 
+    cb = plt.colorbar(ax1, cax = cbaxes)  
+
+    #cbar = fig.colorbar(cax, orientation = 'horizontal', position = 'top')
+    cb.set_label('Electron Density (m$^{-3}$)')
+   
+    ax[1].plot(amp_b.index, elec[:,199], label = '85 km')
+    #ax[2].plot(amp_b.index, elec[:,151], label = '80 km')
+    ax[1].plot(amp_b.index, elec[:,101], label = '75 km')
+    #ax[2].plot(amp_b.index, elec[:,51], label = '70 km')
+    ax[1].plot(amp_b.index, elec[:,0], label = '65 km')
+
+    
+    ax[1].xaxis.set_major_formatter(date_format)
+    ax[1].xaxis.set_major_locator(dates.MinuteLocator(interval =30))
+    ax[1].xaxis.set_major_formatter(dates.DateFormatter('%H.%M'))
+    ax[1].xaxis.grid(True, which="major")
+    ax[1].set_xlabel('Start time 24-Jul-2016 11:30 UT')
+
+    ax[1].set_xlim(amp_b.index[0], amp_b.index[-1])
+    #ax[1].text('2016-07-24 11:41', 1.5e11, 'b.')#, fontsize = 22)
+    ax[1].set_yscale('log')
+    ax[1].set_ylabel('Electon Density (m$^{-3}$)')
+    ax[1].legend(loc = 'upper right', fontsize = 15)
+
+
+
+    ax[1].text(0.03, 0.94, 'b.',
+
+        transform=ax[1].transAxes)
+    ax[0].text(0.03, 0.94, 'a.',
+
+        transform=ax[0].transAxes)
+
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    plt.subplots_adjust(right = 0.81, left = 0.14, top = 0.98, bottom = 0.06)
+
+
+
+
+
