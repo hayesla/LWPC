@@ -3,9 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-import seaborn as sns
-sns.set_context('paper', font_scale = 1.5)
-sns.set_style('ticks',{'xtick.direction':'in','ytick.direction':'in'})
+
 
 
 #def main(argv):
@@ -34,9 +32,9 @@ def read_lwpc_log(file_name):
 
     #takes care of the invalid literal for amp and phase sticking together
 
-    wah = True
-    while wah:
-        wah = False
+    check = True
+    while check:
+        check = False
         for i in range(len(test)):
             if len(test[i]) < 9:
                 for j in range(len(test[i])):
@@ -51,11 +49,8 @@ def read_lwpc_log(file_name):
         for i in range(len(test)):
             for j in range(len(test[i])):
                 if len(test[i][j]) > 12:   
-                    wah = True
+                    check = True
 
-    #test = []
-    #for i in range(len(data)):
-    #    test.append(data[i].split())
 
     test = np.array(test)
     dist1 = []
@@ -100,28 +95,5 @@ def read_lwpc_log(file_name):
     pha = pha1 + pha2 + pha3
     for i in range(len(pha)):
         pha[i] = float(pha[i])
-    return pha, amp, distance
-    '''
-    fig, ax = plt.subplots(2, sharex = True)
-    if file_name == 'gqd.log':
-    ax[0].set_ylim(0,500)ls
-    #ax[1].set_ylim(50, 110)
-        ax[0].set_xlim(0, 2000)
-    if file_name == 'naaa.log':
-        ax[0].set_xlim(0, 6550)
-        ax[0].set_ylim(-100,400)
-        ax[1].set_ylim(50, 120)
-    ax[0].plot(distance[0:-1], pha[0:-1], label = 'Phase')
-    ax[0].legend()
-    ax[0].set_xlabel('Distance (km)')
-    ax[1].plot(distance[0:-1], amp[0:-1], label = 'Amplitude', color = 'r')
-    ax[1].legend()
-    ax[1].set_xlabel('Distance (km)')
-    plt.tight_layout()
-   # plt.savefig('test1.png')
-    plt.show()'''
-    
-
-#if __name__ == "__main__":
-#    main(sys.argv[1:])
+    return distance, amp, pha
 

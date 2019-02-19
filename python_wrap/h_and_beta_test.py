@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 
-loopy_h = np.arange(55, 85, 0.1)
-loopy_b = np.arange(0.2, 0.5, 0.001)
+loopy_h = np.arange(60, 77, 0.1)
+loopy_b = np.arange(0.28, 0.5, 0.01)
 for i in loopy_h:
 	for j in loopy_b:
 		workdir='/home/laura/lwpc_test/lwpc/python_wrap'
-		i_d = 'h_and_beta'
+		i_d = 'h_and_beta_test_final'
 		freq = '24.000'
 		tx_lat = '44.633'
 		tx_lon = '67.283'
@@ -23,7 +23,7 @@ for i in loopy_h:
 		#hhmm = '%02d:%02d' %(mins/60, mins%60)
 		
 		#creating inp file for the lwpc code
-		f = open('h_and_beta.inp', 'w')
+		f = open('h_and_beta_test_final.inp', 'w')
 		f.write('file-mds '+ workdir +'\n')
 		f.write('file-lwf '+ workdir +'\n')
 		f.write('tx '+ i_d +'\n')
@@ -35,17 +35,17 @@ for i in loopy_h:
 		f.write('quit \n')
 		f.close()
 	
-		input_file = 'h_and_beta'
+		input_file = 'h_and_beta_test_final'
 		run_command = './test ' + input_file
 		run_lwpc = subprocess.call(run_command, shell = True)
 		print 'h_prime equals' +str(i)+ 'and beta equals ' + str(j)
 
-		pha, amp, dist = read_lwpc_log('h_and_beta.log')
-		wr = open('h_and_beta_model.dat', 'a')
+		pha, amp, dist = read_lwpc_log('h_and_beta_test_final.log')
+		wr = open('h_and_beta_test_final.dat', 'a')
 		wr.write(str(i) + ' ' + str(j) + ' '  + str(pha[-1]) + ' ' + str(amp[-1]) + ' ' + str(dist[-1]) + '\n')
 		wr.close()
 	
-res = np.loadtxt('h_and_beta_model.dat')
+res = np.loadtxt('h_and_beta_test_final.dat')
 h_prime = res[:,0]
 phase = res[:,1]
 amp = res[:,2]
